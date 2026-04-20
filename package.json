@@ -1,0 +1,20 @@
+{
+  "name": "wishlist-assmt4",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "echo \"apps/web is not scaffolded yet\"",
+    "dev:worker": "npm run dev --workspace @wishlist/worker",
+    "lint": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "build": "npm run build --workspace @wishlist/worker"
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.2",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

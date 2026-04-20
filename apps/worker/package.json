@@ -1,0 +1,13 @@
+{
+  "name": "@wishlist/worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npm run build && if [ -f ../../.env ]; then node --env-file=../../.env ./dist/index.js; else node ./dist/index.js; fi",
+    "build": "tsc -p ./tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.4"
+  }
+}
