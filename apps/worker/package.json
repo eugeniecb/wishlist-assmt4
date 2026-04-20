@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "npm run build && if [ -f ../../.env ]; then node --env-file=../../.env ./dist/index.js; else node ./dist/index.js; fi",
     "build": "tsc -p ./tsconfig.json",
+    "lint": "tsc --noEmit -p ./tsconfig.json",
     "test": "vitest run"
   },
   "dependencies": {

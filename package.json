@@ -6,11 +6,11 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:web": "echo \"apps/web is not scaffolded yet\"",
+    "dev:web": "npm run dev --workspace @wishlist/web",
     "dev:worker": "npm run dev --workspace @wishlist/worker",
-    "lint": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run",
-    "build": "npm run build --workspace @wishlist/worker"
+    "lint": "npm run lint --workspace @wishlist/worker && npm run lint --workspace @wishlist/web",
+    "test": "npm run test --workspace @wishlist/worker",
+    "build": "npm run build --workspace @wishlist/worker && npm run build --workspace @wishlist/web"
   },
   "devDependencies": {
     "@types/node": "^24.7.2",
