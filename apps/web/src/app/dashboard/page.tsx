@@ -88,7 +88,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     preferences.display_name ||
     clerkUser?.fullName ||
     clerkUser?.primaryEmailAddress?.emailAddress ||
-    'Signal Atlas user';
+    'Planet Watch user';
 
   return (
     <main className="shell">

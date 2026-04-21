@@ -3,7 +3,7 @@ import { ClerkProvider, SignInButton, SignUpButton, SignedIn, SignedOut, UserBut
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Signal Atlas',
+  title: 'Planet Watch',
   description: 'Personalized natural event tracking built on Supabase and EONET.'
 };
 
@@ -22,7 +22,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         >
           <header className="site-header">
             <a href="/" className="site-brand">
-              Signal Atlas
+              Planet Watch
             </a>
             <nav className="site-nav">
               <SignedOut>

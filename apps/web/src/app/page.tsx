@@ -5,17 +5,11 @@ export default function HomePage() {
   return (
     <main className="shell shell--auth">
       <section className="hero-panel">
-        <p className="eyebrow">Assignment 4 frontend</p>
         <h1>Track the planetary events that actually matter to you.</h1>
         <p className="lede">
-          Signal Atlas pulls NASA EONET events from Supabase, filters them by each user&apos;s
+          Planet Watch pulls NASA EONET events from Supabase, filters them by each user&apos;s
           preferences, and refreshes the feed live through Realtime.
         </p>
-        <div className="pill-row">
-          <span className="pill">Supabase Auth</span>
-          <span className="pill">Realtime feed</span>
-          <span className="pill">Per-user filters</span>
-        </div>
       </section>
 
       <section className="auth-grid">
