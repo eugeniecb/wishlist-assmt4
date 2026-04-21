@@ -16,7 +16,7 @@ async function main() {
   const supabaseServiceRoleKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
   const eonetApiUrl = process.env.EONET_API_URL ?? 'https://eonet.gsfc.nasa.gov/api/v3/events';
   const eonetDays = process.env.EONET_DAYS ?? '30';
-  const eonetLimit = process.env.EONET_LIMIT ?? '50';
+  const eonetLimit = process.env.EONET_LIMIT ?? '100';
   const eonetStatus = process.env.EONET_STATUS ?? 'open';
   const polledAt = new Date().toISOString();
 
