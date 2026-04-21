@@ -4,7 +4,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Planet Watch',
-  description: 'Personalized natural event tracking built on Supabase and EONET.'
+  description: 'A refined natural event watchlist with live updates tailored to each user.'
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -14,33 +14,41 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <ClerkProvider
           appearance={{
             variables: {
-              colorPrimary: '#0f766e',
-              colorBackground: '#fffaf0',
+              colorPrimary: '#171513',
+              colorBackground: '#fffaf7',
               borderRadius: '1rem'
             }
           }}
         >
           <header className="site-header">
-            <a href="/" className="site-brand">
-              Planet Watch
-            </a>
-            <nav className="site-nav">
-              <SignedOut>
-                <SignInButton mode="modal">
-                  <button type="button" className="button button--ghost">
-                    Sign in
-                  </button>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <button type="button" className="button button--primary">
-                    Sign up
-                  </button>
-                </SignUpButton>
-              </SignedOut>
-              <SignedIn>
-                <UserButton afterSignOutUrl="/" />
-              </SignedIn>
-            </nav>
+            <div className="site-header__inner">
+              <a href="/" className="site-brand">
+                <span className="site-brand__mark" aria-hidden="true">
+                  PW
+                </span>
+                <span className="site-brand__text">
+                  <span className="site-brand__name">Planet Watch</span>
+                  <span className="site-brand__tag">A clearer view of global activity</span>
+                </span>
+              </a>
+              <nav className="site-nav">
+                <SignedOut>
+                  <SignInButton mode="modal">
+                    <button type="button" className="button button--ghost">
+                      Sign in
+                    </button>
+                  </SignInButton>
+                  <SignUpButton mode="modal">
+                    <button type="button" className="button button--primary">
+                      Sign up
+                    </button>
+                  </SignUpButton>
+                </SignedOut>
+                <SignedIn>
+                  <UserButton afterSignOutUrl="/" />
+                </SignedIn>
+              </nav>
+            </div>
           </header>
           {children}
         </ClerkProvider>

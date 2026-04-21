@@ -33,9 +33,9 @@ export function DashboardRealtime() {
   }, [router]);
 
   return (
-    <div className="realtime-banner" aria-live="polite">
-      <span className={`realtime-dot ${isPending ? 'realtime-dot--busy' : ''}`} />
-      Listening for Supabase Realtime updates on <code>natural_events</code>.
+    <div className="status-banner" aria-live="polite">
+      <span className={`status-dot ${isPending ? 'status-dot--busy' : ''}`} />
+      Feed status: watching for fresh event activity.
     </div>
   );
 }

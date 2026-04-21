@@ -90,20 +90,38 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     clerkUser?.primaryEmailAddress?.emailAddress ||
     'Planet Watch user';
 
+  const activeRadiusLabel =
+    preferences.radius_km > 0 ? `${preferences.radius_km} km radius` : 'No distance limit';
+  const categoryCountLabel =
+    preferences.category_filters.length > 0
+      ? `${preferences.category_filters.length} selected`
+      : 'All categories';
+
   return (
-    <main className="shell">
+    <main className="shell dashboard-shell">
       <DashboardRealtime />
 
       <section className="dashboard-hero">
-        <div>
-          <p className="eyebrow">Live personal dashboard</p>
+        <div className="dashboard-hero__copy">
+          <p className="eyebrow">Personal dashboard</p>
           <h1>{displayName}</h1>
           <p className="lede">
-            Your event feed is generated from Supabase with row-level preferences and refreshed when
-            `natural_events` changes in Realtime.
+            Review the activity that matches your watch profile, adjust your signal window, and
+            keep the list focused on what matters most.
           </p>
+          <div className="dashboard-meta">
+            <span className="status-pill">{activeRadiusLabel}</span>
+            <span className="status-pill">{categoryCountLabel}</span>
+            <span className="status-pill">
+              {preferences.preferred_status === 'all'
+                ? 'All statuses'
+                : `${preferences.preferred_status} events`}
+            </span>
+          </div>
         </div>
-        <UserButton afterSignOutUrl="/" />
+        <div className="dashboard-actions">
+          <UserButton afterSignOutUrl="/" />
+        </div>
       </section>
 
       {(message || errorMessage) && (
@@ -113,10 +131,13 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       )}
 
       <section className="dashboard-grid">
-        <article className="card card--tall">
-          <div className="card-header">
+        <article className="dashboard-panel">
+          <div className="panel-header">
             <p className="eyebrow">Preferences</p>
-            <h2>Control your signal window</h2>
+            <h2>Refine your watch profile</h2>
+            <p className="support-copy">
+              Update the filters that shape your event view and save them for future sessions.
+            </p>
           </div>
           <form action={updatePreferences} className="stack">
             <label className="field">
@@ -141,7 +162,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 defaultValue={preferences.category_filters.join(', ')}
                 placeholder="Wildfires, Severe Storms"
               />
-              <small>Comma-separated category titles from EONET.</small>
+              <small>Use commas to separate multiple categories.</small>
             </label>
 
             <div className="field-row">
@@ -176,7 +197,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 step="1"
                 defaultValue={preferences.radius_km}
               />
-              <small>Set to 0 to disable distance filtering.</small>
+              <small>Set to 0 if you want to see matching activity from anywhere.</small>
             </label>
 
             <button type="submit" className="button button--primary">
@@ -190,10 +211,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             <div className="stat">
               <span>Visible events</span>
               <strong>{filteredEvents.length}</strong>
+              <p className="metric-note">Currently in your view</p>
             </div>
             <div className="stat">
               <span>Status rule</span>
-              <strong>{preferences.preferred_status}</strong>
+              <strong>{preferences.preferred_status === 'all' ? 'Any' : preferences.preferred_status}</strong>
+              <p className="metric-note">Applied to every result</p>
             </div>
             <div className="stat">
               <span>Category filters</span>
@@ -202,15 +225,16 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                   ? preferences.category_filters.length
                   : 'none'}
               </strong>
+              <p className="metric-note">Saved to your profile</p>
             </div>
           </article>
 
           <div className="event-list">
             {filteredEvents.length === 0 ? (
-              <article className="card empty-state">
+              <article className="dashboard-panel empty-state">
                 <p className="eyebrow">No matches</p>
-                <h2>Your current filters exclude every event.</h2>
-                <p>Broaden status, categories, or radius to see more activity.</p>
+                <h2>Your current settings are very selective.</h2>
+                <p>Widen the status, category, or radius filters to bring more activity into view.</p>
               </article>
             ) : (
               filteredEvents.map((event) => {
@@ -228,7 +252,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                     : null;
 
                 return (
-                  <article key={event.id} className="card event-card">
+                  <article key={event.id} className="event-card">
                     <div className="event-card__header">
                       <div>
                         <p className="eyebrow">{event.category_titles.join(' · ')}</p>
@@ -261,9 +285,16 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                         <dd>{distanceKm !== null ? `${Math.round(distanceKm)} km` : 'N/A'}</dd>
                       </div>
                     </dl>
-                    <a href={event.link} target="_blank" rel="noreferrer" className="text-link">
-                      Open EONET event
-                    </a>
+                    <div className="event-card__footer">
+                      <span className="support-copy">
+                        {event.latest_geometry_type
+                          ? `Latest geometry: ${event.latest_geometry_type}`
+                          : 'Latest geometry unavailable'}
+                      </span>
+                      <a href={event.link} target="_blank" rel="noreferrer" className="text-link">
+                        Open source event
+                      </a>
+                    </div>
                   </article>
                 );
               })
