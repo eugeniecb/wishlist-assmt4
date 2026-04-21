@@ -54,6 +54,16 @@ function getLatestRefreshTimestamp(events: NaturalEvent[]) {
   }, null);
 }
 
+function getRelativeTimeParts(value: string | null) {
+  const formatted = formatRelativeTime(value);
+  const [primary, ...rest] = formatted.split(' ');
+
+  return {
+    primary,
+    suffix: rest.join(' ')
+  };
+}
+
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   const { userId } = await auth();
   const clerkUser = await currentUser();
@@ -113,6 +123,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const allEvents = dedupeEvents((eventsResult.data ?? []) as NaturalEvent[]);
   const filteredEvents = allEvents.filter((event) => eventMatchesPreferences(event, preferences));
   const latestRefresh = getLatestRefreshTimestamp(filteredEvents);
+  const latestRefreshParts = getRelativeTimeParts(latestRefresh);
   const availableCategories = [
     ...new Set(
       ((categoriesResult.data ?? []) as Array<{ category_titles: string[] | null }>)
@@ -140,24 +151,26 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         <article className="stats-bar__card">
           <span className="stats-bar__label">Wildfires</span>
           <strong>{statsByTone.fire ?? 0}</strong>
-          <p className="metric-note">Amber-highlighted events</p>
         </article>
 
         <article className="stats-bar__card">
           <span className="stats-bar__label">Severe storms</span>
           <strong>{statsByTone.storm ?? 0}</strong>
-          <p className="metric-note">Blue-highlighted events</p>
         </article>
 
         <article className="stats-bar__card">
           <span className="stats-bar__label">Volcanoes</span>
           <strong>{statsByTone.volcano ?? 0}</strong>
-          <p className="metric-note">Crimson-highlighted events</p>
         </article>
 
         <article className="stats-bar__card stats-bar__card--refresh">
           <span className="stats-bar__label">Last refreshed</span>
-          <strong>{formatRelativeTime(latestRefresh)}</strong>
+          <strong className="stats-bar__relative">
+            <span>{latestRefreshParts.primary}</span>
+            {latestRefreshParts.suffix ? (
+              <small>{latestRefreshParts.suffix}</small>
+            ) : null}
+          </strong>
           <p className="metric-note">{formatTimestamp(latestRefresh)}</p>
         </article>
       </section>

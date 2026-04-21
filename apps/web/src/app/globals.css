@@ -508,7 +508,7 @@ h3 {
 }
 
 .stats-bar__card {
-  padding: 1.2rem 1.25rem;
+  padding: 0.9rem 1rem;
   border: 1px solid var(--line);
   border-radius: 24px;
   background:
@@ -539,11 +539,24 @@ h3 {
 
 .stats-bar__card strong {
   display: block;
-  margin-top: 0.4rem;
-  font-size: clamp(1.7rem, 3vw, 2.35rem);
+  margin-top: 0.3rem;
+  font-size: clamp(1.45rem, 2.5vw, 2rem);
   line-height: 1;
   font-family: inherit;
   letter-spacing: -0.03em;
+}
+
+.stats-bar__relative {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.stats-bar__relative small {
+  color: var(--muted);
+  font-size: 0.62em;
+  font-weight: 600;
+  letter-spacing: 0;
 }
 
 .dashboard-grid {
