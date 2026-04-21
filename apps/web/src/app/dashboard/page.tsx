@@ -1,4 +1,3 @@
-import { UserButton } from '@clerk/nextjs';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { updatePreferences } from '@/app/actions';
@@ -104,7 +103,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       <section className="dashboard-hero">
         <div className="dashboard-hero__copy">
           <p className="eyebrow">Personal dashboard</p>
-          <h1>{displayName}</h1>
+          <h1 className="dashboard-hero__title">{displayName}</h1>
           <p className="lede">
             Review the activity that matches your watch profile, adjust your signal window, and
             keep the list focused on what matters most.
@@ -118,9 +117,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 : `${preferences.preferred_status} events`}
             </span>
           </div>
-        </div>
-        <div className="dashboard-actions">
-          <UserButton afterSignOutUrl="/" />
         </div>
       </section>
 
