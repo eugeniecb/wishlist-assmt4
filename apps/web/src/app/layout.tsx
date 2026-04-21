@@ -31,6 +31,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                   <span className="site-brand__tag">A clearer view of global activity</span>
                 </span>
               </a>
+              <div className="site-header__status" aria-hidden="true">
+                <span className="site-header__pulse" />
+                <span>Live monitoring</span>
+              </div>
               <nav className="site-nav">
                 <SignedOut>
                   <SignInButton mode="modal">

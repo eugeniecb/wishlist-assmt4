@@ -66,3 +66,93 @@ export function formatTimestamp(value: string | null) {
     timeStyle: 'short'
   }).format(new Date(value));
 }
+
+export function formatRelativeTime(value: string | null) {
+  if (!value) {
+    return 'No recent update';
+  }
+
+  const deltaMs = new Date(value).getTime() - Date.now();
+  const deltaMinutes = Math.round(deltaMs / (1000 * 60));
+  const formatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+
+  if (Math.abs(deltaMinutes) < 60) {
+    return formatter.format(deltaMinutes, 'minute');
+  }
+
+  const deltaHours = Math.round(deltaMinutes / 60);
+
+  if (Math.abs(deltaHours) < 24) {
+    return formatter.format(deltaHours, 'hour');
+  }
+
+  const deltaDays = Math.round(deltaHours / 24);
+
+  return formatter.format(deltaDays, 'day');
+}
+
+export function dedupeEvents(events: NaturalEvent[]) {
+  const deduped = new Map<string, NaturalEvent>();
+
+  for (const event of events) {
+    if (!deduped.has(event.id)) {
+      deduped.set(event.id, event);
+    }
+  }
+
+  return [...deduped.values()];
+}
+
+export function getCategoryTone(categoryTitle: string) {
+  const title = categoryTitle.toLowerCase();
+
+  if (title.includes('wildfire') || title.includes('fire')) {
+    return 'fire';
+  }
+
+  if (title.includes('storm') || title.includes('severe')) {
+    return 'storm';
+  }
+
+  if (title.includes('volcano') || title.includes('volcanic')) {
+    return 'volcano';
+  }
+
+  if (title.includes('flood')) {
+    return 'flood';
+  }
+
+  if (title.includes('ice') || title.includes('snow')) {
+    return 'ice';
+  }
+
+  return 'general';
+}
+
+export function getPrimaryCategory(event: NaturalEvent) {
+  return event.category_titles[0] ?? 'Natural event';
+}
+
+export function getMagnitudeLevel(value: number | null) {
+  if (value === null || value <= 0) {
+    return 0;
+  }
+
+  if (value < 1) {
+    return 1;
+  }
+
+  if (value < 2.5) {
+    return 2;
+  }
+
+  if (value < 4.5) {
+    return 3;
+  }
+
+  if (value < 6.5) {
+    return 4;
+  }
+
+  return 5;
+}

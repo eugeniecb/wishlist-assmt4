@@ -1,8 +1,18 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { updatePreferences } from '@/app/actions';
+import { PreferencesForm } from '@/app/dashboard/preferences-form';
 import { DashboardRealtime } from '@/app/dashboard/realtime-events';
-import { eventMatchesPreferences, formatTimestamp, haversineDistanceKm } from '@/lib/events';
+import {
+  dedupeEvents,
+  eventMatchesPreferences,
+  formatRelativeTime,
+  formatTimestamp,
+  getCategoryTone,
+  getMagnitudeLevel,
+  getPrimaryCategory,
+  haversineDistanceKm
+} from '@/lib/events';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { NaturalEvent, UserPreferences } from '@/lib/types';
 
@@ -22,10 +32,26 @@ function buildFallbackPreferences(userId: string, displayName?: string | null): 
     category_filters: [],
     watch_latitude: null,
     watch_longitude: null,
-    radius_km: 0,
+    radius_km: 500,
     created_at: new Date(0).toISOString(),
     updated_at: new Date(0).toISOString()
   };
+}
+
+function getLatestRefreshTimestamp(events: NaturalEvent[]) {
+  return events.reduce<string | null>((latest, event) => {
+    const candidate = event.latest_geometry_date ?? event.updated_at;
+
+    if (!candidate) {
+      return latest;
+    }
+
+    if (!latest || new Date(candidate).getTime() > new Date(latest).getTime()) {
+      return candidate;
+    }
+
+    return latest;
+  }, null);
 }
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
@@ -74,50 +100,66 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   }
 
   const eventsResult = await eventsQuery;
+  const categoriesResult = await supabase.from('natural_events').select('category_titles').limit(200);
 
   if (eventsResult.error) {
     throw eventsResult.error;
   }
 
-  const filteredEvents = ((eventsResult.data ?? []) as NaturalEvent[]).filter((event) =>
-    eventMatchesPreferences(event, preferences)
-  );
+  if (categoriesResult.error) {
+    throw categoriesResult.error;
+  }
 
-  const displayName =
-    preferences.display_name ||
-    clerkUser?.fullName ||
-    clerkUser?.primaryEmailAddress?.emailAddress ||
-    'Planet Watch user';
+  const allEvents = dedupeEvents((eventsResult.data ?? []) as NaturalEvent[]);
+  const filteredEvents = allEvents.filter((event) => eventMatchesPreferences(event, preferences));
+  const latestRefresh = getLatestRefreshTimestamp(filteredEvents);
+  const availableCategories = [
+    ...new Set(
+      ((categoriesResult.data ?? []) as Array<{ category_titles: string[] | null }>)
+        .flatMap((event) => event.category_titles ?? [])
+    )
+  ].sort();
 
-  const activeRadiusLabel =
-    preferences.radius_km > 0 ? `${preferences.radius_km} km radius` : 'No distance limit';
-  const categoryCountLabel =
-    preferences.category_filters.length > 0
-      ? `${preferences.category_filters.length} selected`
-      : 'All categories';
+  const statsByTone = filteredEvents.reduce<Record<string, number>>((accumulator, event) => {
+    const tone = getCategoryTone(getPrimaryCategory(event));
+    accumulator[tone] = (accumulator[tone] ?? 0) + 1;
+    return accumulator;
+  }, {});
 
   return (
     <main className="shell dashboard-shell">
-      <DashboardRealtime />
+      <DashboardRealtime eventCount={filteredEvents.length} lastRefreshed={latestRefresh} />
 
-      <section className="dashboard-hero">
-        <div className="dashboard-hero__copy">
-          <p className="eyebrow">Personal dashboard</p>
-          <h1 className="dashboard-hero__title">{displayName}</h1>
-          <p className="lede">
-            Review the activity that matches your watch profile, adjust your signal window, and
-            keep the list focused on what matters most.
-          </p>
-          <div className="dashboard-meta">
-            <span className="status-pill">{activeRadiusLabel}</span>
-            <span className="status-pill">{categoryCountLabel}</span>
-            <span className="status-pill">
-              {preferences.preferred_status === 'all'
-                ? 'All statuses'
-                : `${preferences.preferred_status} events`}
-            </span>
-          </div>
-        </div>
+      <section className="stats-bar">
+        <article className="stats-bar__card stats-bar__card--total">
+          <span className="stats-bar__label">Active feed</span>
+          <strong>{filteredEvents.length}</strong>
+          <p className="metric-note">Events currently matching your watch profile</p>
+        </article>
+
+        <article className="stats-bar__card">
+          <span className="stats-bar__label">Wildfires</span>
+          <strong>{statsByTone.fire ?? 0}</strong>
+          <p className="metric-note">Amber-highlighted events</p>
+        </article>
+
+        <article className="stats-bar__card">
+          <span className="stats-bar__label">Severe storms</span>
+          <strong>{statsByTone.storm ?? 0}</strong>
+          <p className="metric-note">Blue-highlighted events</p>
+        </article>
+
+        <article className="stats-bar__card">
+          <span className="stats-bar__label">Volcanoes</span>
+          <strong>{statsByTone.volcano ?? 0}</strong>
+          <p className="metric-note">Crimson-highlighted events</p>
+        </article>
+
+        <article className="stats-bar__card stats-bar__card--refresh">
+          <span className="stats-bar__label">Last refreshed</span>
+          <strong>{formatRelativeTime(latestRefresh)}</strong>
+          <p className="metric-note">{formatTimestamp(latestRefresh)}</p>
+        </article>
       </section>
 
       {(message || errorMessage) && (
@@ -127,113 +169,36 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       )}
 
       <section className="dashboard-grid">
-        <article className="dashboard-panel">
-          <div className="panel-header">
-            <p className="eyebrow">Preferences</p>
-            <h2>Refine your watch profile</h2>
+        <PreferencesForm
+          action={updatePreferences}
+          availableCategories={availableCategories}
+          preferences={preferences}
+        />
+
+        <section className="feed-panel">
+          <div className="feed-panel__header">
+            <div>
+              <p className="eyebrow">Live event feed</p>
+              <h2>Current activity in your watch window</h2>
+            </div>
             <p className="support-copy">
-              Update the filters that shape your event view and save them for future sessions.
+              Hover over a card to reveal geometry details, or open the source record for the full
+              incident page.
             </p>
           </div>
-          <form action={updatePreferences} className="stack">
-            <label className="field">
-              <span>Display name</span>
-              <input name="display_name" type="text" defaultValue={preferences.display_name ?? ''} />
-            </label>
-
-            <label className="field">
-              <span>Status focus</span>
-              <select name="preferred_status" defaultValue={preferences.preferred_status}>
-                <option value="open">Open events</option>
-                <option value="closed">Closed events</option>
-                <option value="all">All events</option>
-              </select>
-            </label>
-
-            <label className="field">
-              <span>Category filters</span>
-              <input
-                name="category_filters"
-                type="text"
-                defaultValue={preferences.category_filters.join(', ')}
-                placeholder="Wildfires, Severe Storms"
-              />
-              <small>Use commas to separate multiple categories.</small>
-            </label>
-
-            <div className="field-row">
-              <label className="field">
-                <span>Watch latitude</span>
-                <input
-                  name="watch_latitude"
-                  type="number"
-                  step="0.0001"
-                  defaultValue={preferences.watch_latitude ?? ''}
-                  placeholder="41.8781"
-                />
-              </label>
-              <label className="field">
-                <span>Watch longitude</span>
-                <input
-                  name="watch_longitude"
-                  type="number"
-                  step="0.0001"
-                  defaultValue={preferences.watch_longitude ?? ''}
-                  placeholder="-87.6298"
-                />
-              </label>
-            </div>
-
-            <label className="field">
-              <span>Radius (km)</span>
-              <input
-                name="radius_km"
-                type="number"
-                min="0"
-                step="1"
-                defaultValue={preferences.radius_km}
-              />
-              <small>Set to 0 if you want to see matching activity from anywhere.</small>
-            </label>
-
-            <button type="submit" className="button button--primary">
-              Save preferences
-            </button>
-          </form>
-        </article>
-
-        <section className="stack stack--wide">
-          <article className="stats">
-            <div className="stat">
-              <span>Visible events</span>
-              <strong>{filteredEvents.length}</strong>
-              <p className="metric-note">Currently in your view</p>
-            </div>
-            <div className="stat">
-              <span>Status rule</span>
-              <strong>{preferences.preferred_status === 'all' ? 'Any' : preferences.preferred_status}</strong>
-              <p className="metric-note">Applied to every result</p>
-            </div>
-            <div className="stat">
-              <span>Category filters</span>
-              <strong>
-                {preferences.category_filters.length > 0
-                  ? preferences.category_filters.length
-                  : 'none'}
-              </strong>
-              <p className="metric-note">Saved to your profile</p>
-            </div>
-          </article>
 
           <div className="event-list">
             {filteredEvents.length === 0 ? (
               <article className="dashboard-panel empty-state">
                 <p className="eyebrow">No matches</p>
-                <h2>Your current settings are very selective.</h2>
-                <p>Widen the status, category, or radius filters to bring more activity into view.</p>
+                <h2>Your current settings are filtering out every event.</h2>
+                <p>Broaden the filters or clear the location constraint to see more activity.</p>
               </article>
             ) : (
               filteredEvents.map((event) => {
+                const primaryCategory = getPrimaryCategory(event);
+                const tone = getCategoryTone(primaryCategory);
+                const magnitudeLevel = getMagnitudeLevel(event.magnitude_value);
                 const distanceKm =
                   preferences.watch_latitude !== null &&
                   preferences.watch_longitude !== null &&
@@ -248,45 +213,80 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                     : null;
 
                 return (
-                  <article key={event.id} className="event-card">
+                  <article key={event.id} className={`event-card event-card--${tone}`}>
                     <div className="event-card__header">
-                      <div>
-                        <p className="eyebrow">{event.category_titles.join(' · ')}</p>
-                        <h2>{event.title}</h2>
+                      <div className="event-card__title-block">
+                        <div className="event-card__chips">
+                          <span className={`event-chip event-chip--${tone}`}>{primaryCategory}</span>
+                          <span className={`badge badge--${event.status}`}>{event.status}</span>
+                          {distanceKm !== null ? (
+                            <span className="distance-badge">{Math.round(distanceKm)} km away</span>
+                          ) : null}
+                        </div>
+                        <h3>{event.title}</h3>
                       </div>
-                      <span className={`badge badge--${event.status}`}>{event.status}</span>
+
+                      <div className="event-card__time">
+                        <strong>{formatRelativeTime(event.latest_geometry_date)}</strong>
+                        <span>{formatTimestamp(event.latest_geometry_date)}</span>
+                      </div>
                     </div>
+
                     <p className="event-card__summary">
-                      {event.description ?? 'No additional event description available.'}
+                      {event.description ?? 'No additional event description is available yet.'}
                     </p>
-                    <dl className="event-meta">
-                      <div>
-                        <dt>Latest update</dt>
-                        <dd>{formatTimestamp(event.latest_geometry_date)}</dd>
-                      </div>
-                      <div>
-                        <dt>Geometry records</dt>
-                        <dd>{event.geometry_count}</dd>
-                      </div>
-                      <div>
-                        <dt>Magnitude</dt>
-                        <dd>
+
+                    <div className="event-card__metrics">
+                      <div className="event-magnitude">
+                        <span className="event-magnitude__label">Magnitude</span>
+                        <div className="event-magnitude__scale" aria-hidden="true">
+                          {Array.from({ length: 5 }, (_, index) => (
+                            <span
+                              key={`${event.id}-magnitude-${index}`}
+                              className={
+                                index < magnitudeLevel
+                                  ? 'event-magnitude__dot event-magnitude__dot--active'
+                                  : 'event-magnitude__dot'
+                              }
+                            />
+                          ))}
+                        </div>
+                        <strong>
                           {event.magnitude_value !== null
                             ? `${event.magnitude_value} ${event.magnitude_unit ?? ''}`.trim()
                             : 'Unavailable'}
-                        </dd>
+                        </strong>
                       </div>
-                      <div>
-                        <dt>Distance</dt>
-                        <dd>{distanceKm !== null ? `${Math.round(distanceKm)} km` : 'N/A'}</dd>
+
+                      <div className="event-inline-meta">
+                        <span>{event.category_titles.join(' · ')}</span>
+                        <span>{event.geometry_count} geometry records</span>
                       </div>
-                    </dl>
+                    </div>
+
+                    <div className="event-card__details">
+                      <dl className="event-meta">
+                        <div>
+                          <dt>Latest geometry</dt>
+                          <dd>{event.latest_geometry_type ?? 'Unavailable'}</dd>
+                        </div>
+                        <div>
+                          <dt>Last update</dt>
+                          <dd>{formatTimestamp(event.updated_at)}</dd>
+                        </div>
+                        <div>
+                          <dt>Closed at</dt>
+                          <dd>{event.closed_at ? formatTimestamp(event.closed_at) : 'Still active'}</dd>
+                        </div>
+                        <div>
+                          <dt>Magnitude note</dt>
+                          <dd>{event.magnitude_description ?? 'No detail available'}</dd>
+                        </div>
+                      </dl>
+                    </div>
+
                     <div className="event-card__footer">
-                      <span className="support-copy">
-                        {event.latest_geometry_type
-                          ? `Latest geometry: ${event.latest_geometry_type}`
-                          : 'Latest geometry unavailable'}
-                      </span>
+                      <span className="event-card__id">Event ID: {event.id}</span>
                       <a href={event.link} target="_blank" rel="noreferrer" className="text-link">
                         Open source event
                       </a>

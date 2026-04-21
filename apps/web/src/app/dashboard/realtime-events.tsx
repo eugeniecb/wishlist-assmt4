@@ -3,8 +3,14 @@
 import { useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { formatRelativeTime, formatTimestamp } from '@/lib/events';
 
-export function DashboardRealtime() {
+type DashboardRealtimeProps = {
+  eventCount: number;
+  lastRefreshed: string | null;
+};
+
+export function DashboardRealtime({ eventCount, lastRefreshed }: DashboardRealtimeProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -35,7 +41,13 @@ export function DashboardRealtime() {
   return (
     <div className="status-banner" aria-live="polite">
       <span className={`status-dot ${isPending ? 'status-dot--busy' : ''}`} />
-      Feed status: watching for fresh event activity.
+      <div className="status-banner__content">
+        <strong>Live feed monitoring {eventCount} events</strong>
+        <span>
+          {isPending ? 'Refreshing now' : `Last refreshed ${formatRelativeTime(lastRefreshed)}`} ·{' '}
+          {formatTimestamp(lastRefreshed)}
+        </span>
+      </div>
     </div>
   );
 }
