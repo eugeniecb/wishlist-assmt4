@@ -173,10 +173,7 @@ export function PreferencesForm({
         </div>
 
         <div className="preferences-panel__body">
-          <label className="field">
-            <span>Display name</span>
-            <input name="display_name" type="text" defaultValue={preferences.display_name ?? ''} />
-          </label>
+          <input name="display_name" type="hidden" value={preferences.display_name ?? ''} readOnly />
 
           <label className="field">
             <span>Status focus</span>

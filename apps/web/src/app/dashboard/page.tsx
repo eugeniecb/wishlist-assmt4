@@ -287,9 +287,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
                     <div className="event-card__footer">
                       <span className="event-card__id">Event ID: {event.id}</span>
-                      <a href={event.link} target="_blank" rel="noreferrer" className="text-link">
-                        Open source event
-                      </a>
                     </div>
                   </article>
                 );
