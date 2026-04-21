@@ -21,7 +21,7 @@ export type NaturalEvent = {
 };
 
 export type UserPreferences = {
-  user_id: string;
+  clerk_user_id: string;
   display_name: string | null;
   preferred_status: PreferredStatus;
   category_filters: string[];

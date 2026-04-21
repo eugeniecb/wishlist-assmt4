@@ -1,21 +1,8 @@
 'use server';
 
-import { headers } from 'next/headers';
+import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
-
-function getOrigin(headerStore: Headers) {
-  const forwardedProto = headerStore.get('x-forwarded-proto');
-  const forwardedHost = headerStore.get('x-forwarded-host');
-  const host = forwardedHost ?? headerStore.get('host');
-  const protocol = forwardedProto ?? 'http';
-
-  if (!host) {
-    throw new Error('Unable to determine request host for auth redirect.');
-  }
-
-  return `${protocol}://${host}`;
-}
+import { createAdminClient } from '@/lib/supabase/admin';
 
 function parseCategoryFilters(rawValue: FormDataEntryValue | null) {
   return String(rawValue ?? '')
@@ -40,67 +27,14 @@ function parseNullableNumber(rawValue: FormDataEntryValue | null) {
   return parsed;
 }
 
-export async function login(formData: FormData) {
-  const supabase = await createClient();
-  const email = String(formData.get('email') ?? '').trim();
-  const password = String(formData.get('password') ?? '');
-  const destination = '/dashboard';
-
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password
-  });
-
-  if (error) {
-    redirect(`/?error=${encodeURIComponent(error.message)}`);
-  }
-
-  redirect(destination);
-}
-
-export async function signup(formData: FormData) {
-  const supabase = await createClient();
-  const headerStore = await headers();
-  const email = String(formData.get('email') ?? '').trim();
-  const password = String(formData.get('password') ?? '');
-  const displayName = String(formData.get('display_name') ?? '').trim();
-  const origin = getOrigin(headerStore);
-
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: `${origin}/auth/callback?next=/dashboard`,
-      data: {
-        display_name: displayName
-      }
-    }
-  });
-
-  if (error) {
-    redirect(`/?error=${encodeURIComponent(error.message)}`);
-  }
-
-  redirect('/?message=Check your email to confirm your account.');
-}
-
-export async function signout() {
-  const supabase = await createClient();
-
-  await supabase.auth.signOut();
-  redirect('/');
-}
-
 export async function updatePreferences(formData: FormData) {
-  const supabase = await createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  const { userId } = await auth();
 
-  if (!user) {
-    redirect('/');
+  if (!userId) {
+    return redirect('/sign-in');
   }
 
+  const supabase = createAdminClient();
   const displayName = String(formData.get('display_name') ?? '').trim() || null;
   const preferredStatus = String(formData.get('preferred_status') ?? 'open');
   const categoryFilters = parseCategoryFilters(formData.get('category_filters'));
@@ -109,7 +43,7 @@ export async function updatePreferences(formData: FormData) {
   const radiusKm = Number(formData.get('radius_km') ?? '0');
 
   const { error } = await supabase.from('user_preferences').upsert({
-    user_id: user.id,
+    clerk_user_id: userId,
     display_name: displayName,
     preferred_status: preferredStatus,
     category_filters: categoryFilters,

@@ -1,8 +1,10 @@
+import { UserButton } from '@clerk/nextjs';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
-import { signout, updatePreferences } from '@/app/actions';
+import { updatePreferences } from '@/app/actions';
 import { DashboardRealtime } from '@/app/dashboard/realtime-events';
 import { eventMatchesPreferences, formatTimestamp, haversineDistanceKm } from '@/lib/events';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import type { NaturalEvent, UserPreferences } from '@/lib/types';
 
 type DashboardPageProps = {
@@ -13,10 +15,10 @@ function getSingleValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function buildFallbackPreferences(userId: string, email?: string | null): UserPreferences {
+function buildFallbackPreferences(userId: string, displayName?: string | null): UserPreferences {
   return {
-    user_id: userId,
-    display_name: email ?? null,
+    clerk_user_id: userId,
+    display_name: displayName ?? null,
     preferred_status: 'open',
     category_filters: [],
     watch_latitude: null,
@@ -28,22 +30,21 @@ function buildFallbackPreferences(userId: string, email?: string | null): UserPr
 }
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
-  const supabase = await createClient();
+  const { userId } = await auth();
+  const clerkUser = await currentUser();
+  const supabase = createAdminClient();
   const params = await searchParams;
   const message = getSingleValue(params.message);
   const errorMessage = getSingleValue(params.error);
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect('/');
+  if (!userId) {
+    redirect('/sign-in');
   }
 
   const preferencesResult = await supabase
     .from('user_preferences')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('clerk_user_id', userId)
     .maybeSingle();
 
   if (preferencesResult.error) {
@@ -51,7 +52,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   }
 
   const preferences =
-    (preferencesResult.data as UserPreferences | null) ?? buildFallbackPreferences(user.id, user.email);
+    (preferencesResult.data as UserPreferences | null) ??
+    buildFallbackPreferences(
+      userId,
+      clerkUser?.fullName ?? clerkUser?.primaryEmailAddress?.emailAddress ?? null
+    );
 
   let eventsQuery = supabase
     .from('natural_events')
@@ -80,7 +85,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   );
 
   const displayName =
-    preferences.display_name || user.user_metadata.display_name || user.email || 'Signal Atlas user';
+    preferences.display_name ||
+    clerkUser?.fullName ||
+    clerkUser?.primaryEmailAddress?.emailAddress ||
+    'Signal Atlas user';
 
   return (
     <main className="shell">
@@ -95,11 +103,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             `natural_events` changes in Realtime.
           </p>
         </div>
-        <form action={signout}>
-          <button type="submit" className="button button--ghost">
-            Sign out
-          </button>
-        </form>
+        <UserButton afterSignOutUrl="/" />
       </section>
 
       {(message || errorMessage) && (

@@ -1,28 +1,7 @@
-import { redirect } from 'next/navigation';
-import { login, signup } from '@/app/actions';
-import { createClient } from '@/lib/supabase/server';
+import Link from 'next/link';
+import { SignedIn, SignedOut } from '@clerk/nextjs';
 
-type HomePageProps = {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-};
-
-function getSingleValue(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}
-
-export default async function HomePage({ searchParams }: HomePageProps) {
-  const supabase = await createClient();
-  const params = await searchParams;
-  const message = getSingleValue(params.message);
-  const error = getSingleValue(params.error);
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-
-  if (user) {
-    redirect('/dashboard');
-  }
-
+export default function HomePage() {
   return (
     <main className="shell shell--auth">
       <section className="hero-panel">
@@ -40,55 +19,50 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       </section>
 
       <section className="auth-grid">
-        <div className="card">
-          <div className="card-header">
-            <p className="eyebrow">Sign in</p>
-            <h2>Return to your watchlist</h2>
+        <SignedOut>
+          <div className="card">
+            <div className="card-header">
+              <p className="eyebrow">Sign in</p>
+              <h2>Return to your watchlist</h2>
+            </div>
+            <div className="stack">
+              <p className="lede">Use Clerk to sign in and reopen your personalized event feed.</p>
+              <Link href="/sign-in" className="button button--primary">
+                Sign in
+              </Link>
+            </div>
           </div>
-          <form action={login} className="stack">
-            <label className="field">
-              <span>Email</span>
-              <input name="email" type="email" placeholder="you@example.com" required />
-            </label>
-            <label className="field">
-              <span>Password</span>
-              <input name="password" type="password" placeholder="••••••••" required />
-            </label>
-            <button type="submit" className="button button--primary">
-              Sign in
-            </button>
-          </form>
-        </div>
 
-        <div className="card">
-          <div className="card-header">
-            <p className="eyebrow">Create account</p>
-            <h2>Save your own signal profile</h2>
+          <div className="card">
+            <div className="card-header">
+              <p className="eyebrow">Create account</p>
+              <h2>Save your own signal profile</h2>
+            </div>
+            <div className="stack">
+              <p className="lede">Create a Clerk account and start saving category and radius filters.</p>
+              <Link href="/sign-up" className="button button--secondary">
+                Create account
+              </Link>
+            </div>
           </div>
-          <form action={signup} className="stack">
-            <label className="field">
-              <span>Display name</span>
-              <input name="display_name" type="text" placeholder="Storm watcher" />
-            </label>
-            <label className="field">
-              <span>Email</span>
-              <input name="email" type="email" placeholder="you@example.com" required />
-            </label>
-            <label className="field">
-              <span>Password</span>
-              <input name="password" type="password" placeholder="Create a password" required />
-            </label>
-            <button type="submit" className="button button--secondary">
-              Create account
-            </button>
-          </form>
-        </div>
+        </SignedOut>
 
-        {(message || error) && (
-          <aside className={`flash ${error ? 'flash--error' : 'flash--ok'}`}>
-            {error ?? message}
-          </aside>
-        )}
+        <SignedIn>
+          <div className="card card--wide">
+            <div className="card-header">
+              <p className="eyebrow">Signed in</p>
+              <h2>Your dashboard is ready.</h2>
+            </div>
+            <div className="stack">
+              <p className="lede">
+                Clerk is active. Open the dashboard to manage your preferences and watch live event updates.
+              </p>
+              <Link href="/dashboard" className="button button--primary" prefetch={false}>
+                Open dashboard
+              </Link>
+            </div>
+          </div>
+        </SignedIn>
       </section>
     </main>
   );
