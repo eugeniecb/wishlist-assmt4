@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { ClerkProvider, SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
+import Link from 'next/link';
+import { ClerkProvider, SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -31,22 +32,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                   <span className="site-brand__tag">A clearer view of global activity</span>
                 </span>
               </a>
-              <div className="site-header__status" aria-hidden="true">
-                <span className="site-header__pulse" />
-                <span>Live monitoring</span>
-              </div>
               <nav className="site-nav">
                 <SignedOut>
-                  <SignInButton mode="modal">
-                    <button type="button" className="button button--ghost">
-                      Sign in
-                    </button>
-                  </SignInButton>
-                  <SignUpButton mode="modal">
-                    <button type="button" className="button button--primary">
-                      Sign up
-                    </button>
-                  </SignUpButton>
+                  <Link href="/sign-in" className="site-nav__link">
+                    Sign in
+                  </Link>
                 </SignedOut>
                 <SignedIn>
                   <UserButton afterSignOutUrl="/" />
