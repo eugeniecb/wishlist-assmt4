@@ -732,6 +732,7 @@ h3 {
 .location-summary,
 .range-meta,
 .feed-panel__header,
+.feed-panel__controls,
 .event-card__chips,
 .event-card__metrics,
 .event-inline-meta,
@@ -820,13 +821,88 @@ h3 {
   margin-bottom: 1rem;
 }
 
+.feed-panel__controls {
+  align-items: center;
+  justify-content: flex-end;
+}
+
 .feed-panel__header .support-copy {
   max-width: 18rem;
+}
+
+.view-toggle {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem;
+  border-radius: 999px;
+  background: rgba(23, 32, 42, 0.06);
+}
+
+.view-toggle__button {
+  min-height: 2.2rem;
+  padding: 0.45rem 0.9rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.view-toggle__button--active {
+  background: white;
+  color: var(--ink);
+  box-shadow: 0 8px 18px rgba(24, 42, 59, 0.08);
 }
 
 .event-list {
   display: grid;
   gap: 1rem;
+}
+
+.event-map {
+  overflow: hidden;
+  border: 1px solid rgba(23, 32, 42, 0.08);
+  border-radius: 24px;
+  background: rgba(245, 249, 252, 0.86);
+}
+
+.event-map__canvas {
+  height: min(68vh, 42rem);
+  width: 100%;
+}
+
+.event-map__marker-wrapper {
+  background: transparent;
+  border: 0;
+}
+
+.event-map__marker {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 2px solid white;
+  border-radius: 999px;
+  background: var(--marker-color);
+  box-shadow: 0 10px 20px rgba(24, 42, 59, 0.18);
+  font-size: 1rem;
+}
+
+.event-map__popup {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 10rem;
+}
+
+.event-map__popup strong {
+  line-height: 1.3;
+}
+
+.event-map__popup span {
+  color: var(--muted);
+  font-size: 0.84rem;
 }
 
 .event-card {
@@ -1115,6 +1191,7 @@ h3 {
   .event-card__header,
   .event-card__footer,
   .feed-panel__header,
+  .feed-panel__controls,
   .location-summary,
   .range-meta,
   .event-card__metrics,
@@ -1151,6 +1228,10 @@ h3 {
 
   .landing-page__visual {
     min-height: 16rem;
+  }
+
+  .event-map__canvas {
+    height: 24rem;
   }
 
   .filters-toggle {
