@@ -40,6 +40,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                   </Link>
                 </SignedOut>
                 <SignedIn>
+                  <Link href="/dashboard" className="site-nav__link">
+                    Dashboard
+                  </Link>
                   <UserButton afterSignOutUrl="/" />
                 </SignedIn>
               </nav>
